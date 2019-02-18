@@ -33,11 +33,34 @@ download_project(PROJ                Vortex2D
                  ${UPDATE_DISCONNECTED_IF_AVAILABLE})
 add_subdirectory(${Vortex2D_SOURCE_DIR} ${Vortex2D_BINARY_DIR})
 
+file(GLOB IMGUI_SRC
+    "imgui/imgui.h"
+    "imgui/imgui.cpp"
+    "imgui/imguiconfig.h"
+    "imgui/imgui_draw.cpp"
+    "imgui/imgui_internal.h"
+    "imgui/imgui_widgets.cpp"
+    )
+
+compile_shader(SOURCES
+                 ${CMAKE_CURRENT_SOURCE_DIR}/imgui.frag
+                 ${CMAKE_CURRENT_SOURCE_DIR}/imgui.vert
+               OUTPUT "vortexeditor_spirv"
+               VERSION 1.0)
+
 add_executable(VortexEditor
     main.cpp
+    imgui.frag
+    imgui.vert
+    imguirenderer.h
+    imguirenderer.cpp
+    ${IMGUI_SRC}
+    ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.h
 )
 
-target_link_libraries(VortexEditor vortex2d)
+target_link_libraries(VortexEditor vortex2d glfw Box2D)
+target_include_directories(VortexEditor PRIVATE ${CMAKE_CURRENT_BINARY_DIR} "imgui")
 
 if (WIN32)
     vortex2d_copy_dll(VortexEditor)
