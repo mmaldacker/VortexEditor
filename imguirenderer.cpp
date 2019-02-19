@@ -114,7 +114,7 @@ void ImGuiRenderer::Draw(vk::CommandBuffer commandBuffer, const Vortex2D::Render
     glm::vec2 translate(-1.0f - data->DisplayPos.x * scale[0], -1.0f - data->DisplayPos.y * scale[1]);
     commandBuffer.pushConstants(mDescriptorSet.pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, vk::ArrayProxy<const glm::vec2>{scale, translate});
 
-    //commandBuffer.setViewport(0, {vk::Viewport(0, 0, data->DisplaySize.x, data->DisplaySize.y)});
+    commandBuffer.setViewport(0, {vk::Viewport(0, 0, data->DisplaySize.x, data->DisplaySize.y)});
 
     int vtxOffset = 0;
     int idxOffset = 0;
@@ -134,7 +134,7 @@ void ImGuiRenderer::Draw(vk::CommandBuffer commandBuffer, const Vortex2D::Render
                 vk::Offset2D offset((int)(pcmd->ClipRect.x - pos.x), (int)(pcmd->ClipRect.y - pos.y));
                 vk::Extent2D extent((uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x), (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y));
                 vk::Rect2D rect(offset, extent);
-                //commandBuffer.setScissor(0, {rect});
+                commandBuffer.setScissor(0, {rect});
                 commandBuffer.drawIndexed(pcmd->ElemCount, 1, idxOffset, vtxOffset, 0);
             }
             idxOffset += pcmd->ElemCount;

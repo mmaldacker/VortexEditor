@@ -1,6 +1,7 @@
 #include <Vortex2D/Vortex2D.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include <chrono>
 #include "imguirenderer.h"
 
 std::vector<const char*> GetGLFWExtensions()
@@ -163,19 +164,25 @@ int main(int argc, char** argv)
         .setAlphaBlendOp(vk::BlendOp::eAdd)
         .setColorBlendOp(vk::BlendOp::eAdd)
         .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
         .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
         .setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+
+    constexpr int32_t timeWindowSize = 200;
+    float timePoints[timeWindowSize] = {0.0f};
+    int timePointIndex = 0;
 
     while(!glfwWindowShouldClose(glfwWindow))
     {
+        auto start = std::chrono::system_clock::now();
+
         glfwPollEvents();
         UpdateInput(glfwWindow);
         ImGui::NewFrame();
 
-        if (ImGui::Begin("Frame timing"))
+        if (ImGui::Begin("Frame timing", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         {
-            ImGui::Text("a little test");
+            ImGui::PlotLines("", timePoints, timeWindowSize, timePointIndex, nullptr, 0.0f, 40.0f, ImVec2(0, 80));
             ImGui::End();
         }
 
@@ -187,6 +194,10 @@ int main(int argc, char** argv)
         auto imguiRendererCmd = window.Record({renderer}, blendState);
         imguiRendererCmd.Submit();
         window.Display();
+
+        auto end = std::chrono::system_clock::now();
+        timePoints[timePointIndex] = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+        timePointIndex = (timePointIndex + 1) % timeWindowSize;
     }
 
     ImGui::DestroyContext();
