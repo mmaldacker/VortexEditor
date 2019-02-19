@@ -80,17 +80,46 @@ int main(int argc, char** argv)
 
     ImGui::CreateContext();
 
+    auto& io = ImGui::GetIO();
+
+    io.DisplaySize = ImVec2(windowSize.x, windowSize.y);
+    io.DisplayFramebufferScale = ImVec2(scale.x, scale.y);
+    io.DeltaTime = 1.0f/60.0f;
+
+    Vortex2D::Renderer::Clear clear(glm::vec4(0.1f));
+    auto clearCmd = window.Record({clear});
     ImGuiRenderer renderer(device);
+
+    Vortex2D::Renderer::ColorBlendState blendState;
+    blendState.ColorBlend
+        .setBlendEnable(true)
+        .setAlphaBlendOp(vk::BlendOp::eAdd)
+        .setColorBlendOp(vk::BlendOp::eAdd)
+        .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+        .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+        .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+        .setDstAlphaBlendFactor(vk::BlendFactor::eZero);
 
     while(!glfwWindowShouldClose(glfwWindow))
     {
         glfwPollEvents();
+
         ImGui::NewFrame();
+
+        if (ImGui::Begin("Frame timing"))
+        {
+            ImGui::Text("a little test");
+            ImGui::End();
+        }
 
         ImGui::EndFrame();
         ImGui::Render();
 
-        window.Record({renderer}).Submit();
+        renderer.Update();
+
+        clearCmd.Submit();
+        auto imguiRendererCmd = window.Record({renderer}, blendState);
+        imguiRendererCmd.Submit();
         window.Display();
     }
 
