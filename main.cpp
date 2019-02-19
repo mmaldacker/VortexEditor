@@ -3,14 +3,6 @@
 #include <imgui.h>
 #include "imguirenderer.h"
 
-void ErrorCallback(int error, const char* description)
-{
-    throw std::runtime_error("GLFW Error: " +
-                             std::to_string(error) +
-                             " What: " +
-                             std::string(description));
-}
-
 std::vector<const char*> GetGLFWExtensions()
 {
     std::vector<const char*> extensions;
@@ -61,6 +53,77 @@ GLFWwindow* GetGLFWWindow(const glm::ivec2& size)
     return window;
 }
 
+void ErrorCallback(int error, const char* description)
+{
+    throw std::runtime_error("GLFW Error: " +
+                             std::to_string(error) +
+                             " What: " +
+                             std::string(description));
+}
+
+static bool g_MouseJustPressed[5] = { false, false, false, false, false };
+
+void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (action == GLFW_PRESS && button >= 0 && button < IM_ARRAYSIZE(g_MouseJustPressed))
+        g_MouseJustPressed[button] = true;
+}
+
+void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.MouseWheelH += (float)xoffset;
+    io.MouseWheel += (float)yoffset;
+}
+
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (action == GLFW_PRESS)
+        io.KeysDown[key] = true;
+    if (action == GLFW_RELEASE)
+        io.KeysDown[key] = false;
+
+    io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+    io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+    io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+    io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+}
+
+void CharCallback(GLFWwindow* window, unsigned int c)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    if (c > 0 && c < 0x10000)
+        io.AddInputCharacter((unsigned short)c);
+}
+
+void UpdateInput(GLFWwindow* glfwWindow)
+{
+    auto& io = ImGui::GetIO();
+    for (int i = 0; i < IM_ARRAYSIZE(io.MouseDown); i++)
+    {
+        io.MouseDown[i] = g_MouseJustPressed[i] || glfwGetMouseButton(glfwWindow, i) != 0;
+        g_MouseJustPressed[i] = false;
+    }
+
+    const ImVec2 mouse_pos_backup = io.MousePos;
+    io.MousePos = ImVec2(-FLT_MAX, -FLT_MAX);
+
+    if (glfwGetWindowAttrib(glfwWindow, GLFW_FOCUSED) != 0)
+    {
+        if (io.WantSetMousePos)
+        {
+            glfwSetCursorPos(glfwWindow, (double)mouse_pos_backup.x, (double)mouse_pos_backup.y);
+        }
+        else
+        {
+            double mouse_x, mouse_y;
+            glfwGetCursorPos(glfwWindow, &mouse_x, &mouse_y);
+            io.MousePos = ImVec2((float)mouse_x, (float)mouse_y);
+        }
+    }
+}
+
 int main(int argc, char** argv)
 {
     glfwInit();
@@ -78,12 +141,16 @@ int main(int argc, char** argv)
     Vortex2D::Renderer::Device device(instance.GetPhysicalDevice(), surface, validation);
     Vortex2D::Renderer::RenderWindow window(device, surface, windowSize.x * scale.x, windowSize.y * scale.y);
 
-    ImGui::CreateContext();
+    glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
+    glfwSetScrollCallback(glfwWindow, ScrollCallback);
+    glfwSetKeyCallback(glfwWindow, KeyCallback);
+    glfwSetCharCallback(glfwWindow, CharCallback);
 
+    ImGui::CreateContext();
     auto& io = ImGui::GetIO();
 
-    io.DisplaySize = ImVec2(windowSize.x, windowSize.y);
-    io.DisplayFramebufferScale = ImVec2(scale.x, scale.y);
+    io.DisplaySize = ImVec2(windowSize.x * scale.x, windowSize.y * scale.y);
+    io.FontGlobalScale = scale.x;
     io.DeltaTime = 1.0f/60.0f;
 
     Vortex2D::Renderer::Clear clear(glm::vec4(0.1f));
@@ -103,7 +170,7 @@ int main(int argc, char** argv)
     while(!glfwWindowShouldClose(glfwWindow))
     {
         glfwPollEvents();
-
+        UpdateInput(glfwWindow);
         ImGui::NewFrame();
 
         if (ImGui::Begin("Frame timing"))
@@ -112,7 +179,6 @@ int main(int argc, char** argv)
             ImGui::End();
         }
 
-        ImGui::EndFrame();
         ImGui::Render();
 
         renderer.Update();
