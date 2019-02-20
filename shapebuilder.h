@@ -3,6 +3,13 @@
 #include <Vortex2D/Vortex2D.h>
 #include <imgui.h>
 
+struct Shape
+{
+    std::shared_ptr<Vortex2D::Renderer::Shape> mShape;
+    Vortex2D::Renderer::RenderCommand mCmd;
+    std::string mName;
+};
+
 class ShapeBuilder
 {
 public:
@@ -16,6 +23,8 @@ public:
 
 private:
     const Vortex2D::Renderer::Device& mDevice;
-    std::vector<std::shared_ptr<Vortex2D::Renderer::Shape>> mShapes;
-    std::vector<Vortex2D::Renderer::RenderCommand> mCmds;
+    std::vector<Shape> mShapes;
+
+    std::shared_ptr<Vortex2D::Renderer::Shape> mBuildShape;
+    Vortex2D::Renderer::RenderCommand mBuildCmd;
 };
