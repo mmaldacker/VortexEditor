@@ -45,6 +45,8 @@ ImGuiRenderer::ImGuiRenderer(const Vortex2D::Renderer::Device& device)
                     .VertexAttribute(1, 0, vk::Format::eR32G32Sfloat, offsetof(ImDrawVert, uv))
                     .VertexAttribute(2, 0, vk::Format::eR8G8B8A8Unorm, offsetof(ImDrawVert, col))
                     .VertexBinding(0, sizeof(ImDrawVert))
+                    .DynamicState(vk::DynamicState::eScissor)
+                    .DynamicState(vk::DynamicState::eViewport)
                     .Layout(mDescriptorSet.pipelineLayout);
 
     unsigned char* pixels;

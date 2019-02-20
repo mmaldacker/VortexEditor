@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <chrono>
 #include "imguirenderer.h"
+#include "shapebuilder.h"
 
 std::vector<const char*> GetGLFWExtensions()
 {
@@ -137,69 +138,77 @@ int main(int argc, char** argv)
     glm::ivec2 windowSize = {1024, 1024};
     GLFWwindow* glfwWindow = GetGLFWWindow(windowSize);
     glm::vec2 scale = GetGLFWindowScale(glfwWindow);
-    Vortex2D::Renderer::Instance instance("VulkanEditor", GetGLFWExtensions(), validation);
-    vk::SurfaceKHR surface(GetGLFWSurface(glfwWindow, static_cast<VkInstance>(instance.GetInstance())));
-    Vortex2D::Renderer::Device device(instance.GetPhysicalDevice(), surface, validation);
-    Vortex2D::Renderer::RenderWindow window(device, surface, windowSize.x * scale.x, windowSize.y * scale.y);
 
-    glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
-    glfwSetScrollCallback(glfwWindow, ScrollCallback);
-    glfwSetKeyCallback(glfwWindow, KeyCallback);
-    glfwSetCharCallback(glfwWindow, CharCallback);
-
-    ImGui::CreateContext();
-    auto& io = ImGui::GetIO();
-
-    io.DisplaySize = ImVec2(windowSize.x * scale.x, windowSize.y * scale.y);
-    io.FontGlobalScale = scale.x;
-    io.DeltaTime = 1.0f/60.0f;
-
-    Vortex2D::Renderer::Clear clear(glm::vec4(0.1f));
-    auto clearCmd = window.Record({clear});
-    ImGuiRenderer renderer(device);
-
-    Vortex2D::Renderer::ColorBlendState blendState;
-    blendState.ColorBlend
-        .setBlendEnable(true)
-        .setAlphaBlendOp(vk::BlendOp::eAdd)
-        .setColorBlendOp(vk::BlendOp::eAdd)
-        .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-        .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-        .setSrcAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-        .setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-
-    constexpr int32_t timeWindowSize = 200;
-    float timePoints[timeWindowSize] = {0.0f};
-    int timePointIndex = 0;
-
-    while(!glfwWindowShouldClose(glfwWindow))
     {
-        auto start = std::chrono::system_clock::now();
+        Vortex2D::Renderer::Instance instance("VulkanEditor", GetGLFWExtensions(), validation);
+        vk::SurfaceKHR surface(GetGLFWSurface(glfwWindow, static_cast<VkInstance>(instance.GetInstance())));
+        Vortex2D::Renderer::Device device(instance.GetPhysicalDevice(), surface, validation);
+        Vortex2D::Renderer::RenderWindow window(device, surface, windowSize.x * scale.x, windowSize.y * scale.y);
 
-        glfwPollEvents();
-        UpdateInput(glfwWindow);
-        ImGui::NewFrame();
+        glfwSetMouseButtonCallback(glfwWindow, MouseButtonCallback);
+        glfwSetScrollCallback(glfwWindow, ScrollCallback);
+        glfwSetKeyCallback(glfwWindow, KeyCallback);
+        glfwSetCharCallback(glfwWindow, CharCallback);
 
-        if (ImGui::Begin("Frame timing", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        ImGui::CreateContext();
+        auto& io = ImGui::GetIO();
+
+        io.DisplaySize = ImVec2(windowSize.x * scale.x, windowSize.y * scale.y);
+        io.FontGlobalScale = scale.x;
+        io.DeltaTime = 1.0f/60.0f;
+
+        Vortex2D::Renderer::Clear clear(glm::vec4(0.1f));
+        auto clearCmd = window.Record({clear});
+        ImGuiRenderer renderer(device);
+        ShapeBuilder shapeBuilder(device);
+
+        Vortex2D::Renderer::ColorBlendState blendState;
+        blendState.ColorBlend
+            .setBlendEnable(true)
+            .setAlphaBlendOp(vk::BlendOp::eAdd)
+            .setColorBlendOp(vk::BlendOp::eAdd)
+            .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+            .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+            .setSrcAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+            .setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+
+        constexpr int32_t timeWindowSize = 200;
+        float timePoints[timeWindowSize] = {0.0f};
+        int timePointIndex = 0;
+
+        while(!glfwWindowShouldClose(glfwWindow))
         {
-            ImGui::PlotLines("", timePoints, timeWindowSize, timePointIndex, nullptr, 0.0f, 40.0f, ImVec2(0, 80));
-            ImGui::End();
+            auto start = std::chrono::system_clock::now();
+
+            glfwPollEvents();
+            UpdateInput(glfwWindow);
+            clearCmd.Submit();
+
+            ImGui::NewFrame();
+
+            if (ImGui::Begin("Frame timing", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::PlotLines("", timePoints, timeWindowSize, timePointIndex, nullptr, 0.0f, 40.0f, ImVec2(0, 80));
+                ImGui::End();
+            }
+
+            shapeBuilder.Render(window);
+
+            ImGui::Render();
+
+            renderer.Update();
+
+            auto imguiRendererCmd = window.Record({renderer}, blendState);
+            imguiRendererCmd.Submit();
+            window.Display();
+
+            auto end = std::chrono::system_clock::now();
+            timePoints[timePointIndex] = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+            timePointIndex = (timePointIndex + 1) % timeWindowSize;
         }
 
-        ImGui::Render();
-
-        renderer.Update();
-
-        clearCmd.Submit();
-        auto imguiRendererCmd = window.Record({renderer}, blendState);
-        imguiRendererCmd.Submit();
-        window.Display();
-
-        auto end = std::chrono::system_clock::now();
-        timePoints[timePointIndex] = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-        timePointIndex = (timePointIndex + 1) % timeWindowSize;
+        ImGui::DestroyContext();
     }
 
-    ImGui::DestroyContext();
     glfwTerminate();
 }
