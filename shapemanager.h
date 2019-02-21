@@ -10,13 +10,12 @@ struct Shape
     std::string mName;
 };
 
-class ShapeBuilder
+class ShapeManager
 {
 public:
-    ShapeBuilder(const Vortex2D::Renderer::Device& device)
+    ShapeManager(const Vortex2D::Renderer::Device& device)
         : mDevice(device)
     {
-
     }
 
     void Render(Vortex2D::Renderer::RenderTarget& target);

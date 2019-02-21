@@ -54,8 +54,8 @@ add_executable(VortexEditor
     imgui.vert
     imguirenderer.h
     imguirenderer.cpp
-    shapebuilder.h
-    shapebuilder.cpp
+    shapemanager.h
+    shapemanager.cpp
     ${IMGUI_SRC}
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.h

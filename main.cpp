@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <chrono>
 #include "imguirenderer.h"
-#include "shapebuilder.h"
+#include "shapemanager.h"
 
 std::vector<const char*> GetGLFWExtensions()
 {
@@ -160,7 +160,8 @@ int main(int argc, char** argv)
         Vortex2D::Renderer::Clear clear(glm::vec4(0.1f));
         auto clearCmd = window.Record({clear});
         ImGuiRenderer renderer(device);
-        ShapeBuilder shapeBuilder(device);
+        Vortex2D::Renderer::RenderCommand imguiCmd;
+        ShapeManager shapeManager(device);
 
         Vortex2D::Renderer::ColorBlendState blendState;
         blendState.ColorBlend
@@ -192,14 +193,14 @@ int main(int argc, char** argv)
                 ImGui::End();
             }
 
-            shapeBuilder.Render(window);
+            shapeManager.Render(window);
 
             ImGui::Render();
 
             renderer.Update();
 
-            auto imguiRendererCmd = window.Record({renderer}, blendState);
-            imguiRendererCmd.Submit();
+            imguiCmd = window.Record({renderer}, blendState);
+            imguiCmd.Submit();
             window.Display();
 
             auto end = std::chrono::system_clock::now();
