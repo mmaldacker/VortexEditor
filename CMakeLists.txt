@@ -56,13 +56,23 @@ add_executable(VortexEditor
     imguirenderer.cpp
     shapemanager.h
     shapemanager.cpp
+    world.h
+    world.cpp
+    rigidbody.h
+    rigidbody.cpp
     ${IMGUI_SRC}
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.h
 )
 
-target_link_libraries(VortexEditor vortex2d glfw Box2D)
-target_include_directories(VortexEditor PRIVATE ${CMAKE_CURRENT_BINARY_DIR} "imgui")
+target_link_libraries(VortexEditor glfw vortex2d Box2D)
+
+# Ensure glfw is included first
+target_include_directories(VortexEditor PRIVATE
+    $<TARGET_PROPERTY:glfw,INTERFACE_INCLUDE_DIRECTORIES>
+    ${CMAKE_CURRENT_BINARY_DIR}
+    "imgui"
+    ${Box2D_SOURCE_DIR}/Box2D)
 
 if (WIN32)
     vortex2d_copy_dll(VortexEditor)

@@ -105,6 +105,10 @@ void ImGuiRenderer::Update(const glm::mat4& projection, const glm::mat4& view)
 void ImGuiRenderer::Draw(vk::CommandBuffer commandBuffer, const Vortex2D::Renderer::RenderState& renderState)
 {
     auto* data = ImGui::GetDrawData();
+    if (data == nullptr)
+    {
+        return;
+    }
 
     mPipeline.Bind(commandBuffer, renderState);
     commandBuffer.bindVertexBuffers(0, {mVertexBuffer.Handle()}, {0ul});

@@ -4,6 +4,7 @@
 #include <chrono>
 #include "imguirenderer.h"
 #include "shapemanager.h"
+#include "world.h"
 
 std::vector<const char*> GetGLFWExtensions()
 {
@@ -136,6 +137,7 @@ int main(int argc, char** argv)
 
     bool validation = true;
     glm::ivec2 windowSize = {1024, 1024};
+    glm::ivec2 fluidSize = {256, 256};
     GLFWwindow* glfwWindow = GetGLFWWindow(windowSize);
     glm::vec2 scale = GetGLFWindowScale(glfwWindow);
 
@@ -151,6 +153,7 @@ int main(int argc, char** argv)
         glfwSetCharCallback(glfwWindow, CharCallback);
 
         ImGui::CreateContext();
+        ImGui::StyleColorsClassic();
         auto& io = ImGui::GetIO();
 
         io.DisplaySize = ImVec2(windowSize.x * scale.x, windowSize.y * scale.y);
@@ -161,7 +164,10 @@ int main(int argc, char** argv)
         auto clearCmd = window.Record({clear});
         ImGuiRenderer renderer(device);
         Vortex2D::Renderer::RenderCommand imguiCmd;
-        ShapeManager shapeManager(device);
+
+        std::vector<Shape> shapes;
+        ShapeManager shapeManager(device, shapes);
+        World world(device, fluidSize, shapes);
 
         Vortex2D::Renderer::ColorBlendState blendState;
         blendState.ColorBlend
@@ -172,6 +178,9 @@ int main(int argc, char** argv)
             .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
             .setSrcAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
             .setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+
+        world.Record(window, blendState);
+        imguiCmd = window.Record({renderer}, blendState);
 
         constexpr int32_t timeWindowSize = 200;
         float timePoints[timeWindowSize] = {0.0f};
@@ -194,9 +203,11 @@ int main(int argc, char** argv)
             }
 
             shapeManager.Render(window);
+            world.Render();
 
             ImGui::Render();
 
+            imguiCmd.Wait();
             renderer.Update();
 
             imguiCmd = window.Record({renderer}, blendState);

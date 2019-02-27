@@ -1,12 +1,18 @@
 #include "shapemanager.h"
 
+ShapeManager::ShapeManager(const Vortex2D::Renderer::Device& device, std::vector<Shape>& shapes)
+    : mDevice(device)
+    , mShapes(shapes)
+{
+}
+
 void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
 {
     auto& io = ImGui::GetIO();
 
-    static int type = 0;
+    static int type = 1;
     static int shapeType = 0;
-    static glm::vec4 color(1.0f);
+    static glm::vec4 color = glm::vec4(92.0f, 173.0f, 159.0f, 255.0f) / glm::vec4(255.0f);;
     static std::array<char, 20> nameBuffer = {"shape0"};
     static int currentShapeIndex = 0;
 
@@ -54,7 +60,8 @@ void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
         auto size = glm::abs(glm::vec2{io.MouseClickedPos[0].x - io.MousePos.x, io.MouseClickedPos[0].y - io.MousePos.y});
         if (shapeType == 0)
         {
-            mBuildShape = std::make_shared<Vortex2D::Renderer::Ellipse>(mDevice, size);
+            auto radius = glm::length(size);
+            mBuildShape = std::make_shared<Vortex2D::Renderer::Ellipse>(mDevice, glm::vec2(radius, radius));
         }
         else if (shapeType == 1)
         {

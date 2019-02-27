@@ -13,16 +13,13 @@ struct Shape
 class ShapeManager
 {
 public:
-    ShapeManager(const Vortex2D::Renderer::Device& device)
-        : mDevice(device)
-    {
-    }
+    ShapeManager(const Vortex2D::Renderer::Device& device, std::vector<Shape>& shapes);
 
     void Render(Vortex2D::Renderer::RenderTarget& target);
 
 private:
     const Vortex2D::Renderer::Device& mDevice;
-    std::vector<Shape> mShapes;
+    std::vector<Shape>& mShapes;
 
     std::shared_ptr<Vortex2D::Renderer::Shape> mBuildShape;
     Vortex2D::Renderer::RenderCommand mBuildCmd;
