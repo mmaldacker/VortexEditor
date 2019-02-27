@@ -140,6 +140,7 @@ int main(int argc, char** argv)
     glm::ivec2 fluidSize = {256, 256};
     GLFWwindow* glfwWindow = GetGLFWWindow(windowSize);
     glm::vec2 scale = GetGLFWindowScale(glfwWindow);
+    float fluidScale = 4.0f * scale.x;
 
     {
         Vortex2D::Renderer::Instance instance("VulkanEditor", GetGLFWExtensions(), validation);
@@ -167,7 +168,7 @@ int main(int argc, char** argv)
 
         std::vector<Shape> shapes;
         ShapeManager shapeManager(device, shapes);
-        World world(device, fluidSize, shapes);
+        World world(device, fluidSize, fluidScale, shapes);
 
         Vortex2D::Renderer::ColorBlendState blendState;
         blendState.ColorBlend

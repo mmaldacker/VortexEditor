@@ -8,6 +8,15 @@ struct Shape
     std::shared_ptr<Vortex2D::Renderer::Shape> mShape;
     Vortex2D::Renderer::RenderCommand mCmd;
     std::string mName;
+    glm::vec2 mSize;
+
+    enum class Type
+    {
+        Circle,
+        Rectangle,
+    };
+
+    Type mType;
 };
 
 class ShapeManager

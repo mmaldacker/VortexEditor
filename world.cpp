@@ -1,14 +1,57 @@
 #include "world.h"
 
-World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, std::vector<Shape>& shapes)
-    : mWorld(device, size, ImGui::GetIO().DeltaTime, 2)
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/transform.hpp>
+
+namespace
+{
+b2BodyType GetBox2DType(int type)
+{
+    switch (type)
+    {
+    case 0:
+        return b2_staticBody;
+    case 1:
+        return b2_dynamicBody;
+    default:
+        return b2_staticBody;
+    }
+}
+
+Vortex2D::Fluid::RigidBody::Type GetVortex2DType(int type)
+{
+    switch (type)
+    {
+    case 0:
+        return Vortex2D::Fluid::RigidBody::Type::eStatic;
+    case 1:
+        return Vortex2D::Fluid::RigidBody::Type::eWeak;
+    case 2:
+        return Vortex2D::Fluid::RigidBody::Type::eStrong;
+    default:
+        return Vortex2D::Fluid::RigidBody::Type::eStatic;
+    }
+}
+
+const float gravityForce = 100.0f;
+
+}
+
+World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<Shape>& shapes)
+    : mDevice(device)
+    , mSize(size)
+    , mScale(scale)
+    , mWorld(device, size, ImGui::GetIO().DeltaTime, 2)
+    , mBox2DWorld(b2Vec2(0.0f, gravityForce))
+    , mBox2DSolver(mBox2DWorld)
     , mShapes(shapes)
     , mGravity(device, size)
     , mLiquidPhi(mWorld.LiquidDistanceField())
-
 {
-    mGravity.Colour = {0.0f, 3.0f, 0.0f, 0.0f};
+    mWorld.AttachRigidBodySolver(mBox2DSolver);
+    mGravity.Colour = {0.0f, ImGui::GetIO().DeltaTime * gravityForce, 0.0f, 0.0f};
     mLiquidPhi.Colour = glm::vec4(36.0f, 123.0f, 160.0f, 255.0f) / glm::vec4(255.0f);
+    mVelocityRender = mWorld.RecordVelocity({mGravity}, Vortex2D::Fluid::VelocityOp::Add);
 }
 
 void World::Record(Vortex2D::Renderer::RenderTarget& target, Vortex2D::Renderer::ColorBlendState blendState)
@@ -31,8 +74,8 @@ void World::Render()
 
         ImGui::PushID("box2dtype");
         ImGui::Text("Box2D Type");
-        ImGui::RadioButton("Dynamic", &box2dType, 0);
-        ImGui::RadioButton("Static", &box2dType, 1);
+        ImGui::RadioButton("Static", &box2dType, 0);
+        ImGui::RadioButton("Dynamic", &box2dType, 1);
         ImGui::PopID();
         ImGui::PushID("vortex2dtype");
         ImGui::Text("Vortex2D Type");
@@ -42,14 +85,41 @@ void World::Render()
         ImGui::PopID();
         if (ImGui::Button("Add"))
         {
+            auto& shape = mShapes[currentShapeIndex];
+            if (shape.mType == Shape::Type::Circle)
+            {
+                auto radius = shape.mSize.x / mScale;
+                auto rigidbody = std::make_unique<CircleRigidbody>(mDevice,
+                                                                   mSize,
+                                                                   mBox2DWorld,
+                                                                   GetBox2DType(box2dType),
+                                                                   GetVortex2DType(vortex2dType),
+                                                                   radius);
 
+                glm::vec2 pos = shape.mShape->Position;
+                rigidbody->mRigidbody.SetTransform(pos / mScale, 0.0f);
+                mWorld.AddRigidbody(rigidbody->mRigidbody);
+                mRigidbodies.emplace_back(std::move(rigidbody));
+            }
         }
+
         ImGui::End();
+    }
+
+    auto& io = ImGui::GetIO();
+    if (!io.WantCaptureMouse && io.MouseClicked[1])
+    {
+        glm::vec2 radius(16.0f);
+        Vortex2D::Renderer::IntRectangle fluid(mDevice, radius);
+        fluid.Position = {io.MouseClickedPos[1].x / mScale, io.MouseClickedPos[1].y / mScale};
+        fluid.Colour = glm::vec4(4);
+
+        mWorld.RecordParticleCount({fluid}).Submit().Wait();
     }
 
     mWorld.SubmitVelocity(mVelocityRender);
     auto params = Vortex2D::Fluid::FixedParams(12);
     mWorld.Step(params);
 
-    mWindowRender.Submit();
+    mWindowRender.Submit(glm::scale(glm::vec3(mScale, mScale, 1.0f)));
 }

@@ -14,6 +14,8 @@ void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
     static int shapeType = 0;
     static glm::vec4 color = glm::vec4(92.0f, 173.0f, 159.0f, 255.0f) / glm::vec4(255.0f);;
     static std::array<char, 20> nameBuffer = {"shape0"};
+    static glm::vec2 currentSize = {0.0f, 0.0f};
+    static Shape::Type currentType;
     static int currentShapeIndex = 0;
 
     if (ImGui::Begin("Shape Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
@@ -39,7 +41,7 @@ void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
             ImGui::InputText("Name", nameBuffer.data(), nameBuffer.size());
             if (ImGui::Button("Create"))
             {
-                mShapes.push_back({mBuildShape, std::move(mBuildCmd), {nameBuffer.data()}});
+                mShapes.push_back({mBuildShape, std::move(mBuildCmd), {nameBuffer.data()}, currentSize, currentType});
                 auto name = "shape" + std::to_string(mShapes.size());
                 std::copy(name.begin(), name.end(), nameBuffer.data());
             }
@@ -62,6 +64,8 @@ void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
         {
             auto radius = glm::length(size);
             mBuildShape = std::make_shared<Vortex2D::Renderer::Ellipse>(mDevice, glm::vec2(radius, radius));
+            currentSize = {radius, radius};
+            currentType = Shape::Type::Circle;
         }
         else if (shapeType == 1)
         {

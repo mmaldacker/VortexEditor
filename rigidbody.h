@@ -30,7 +30,13 @@ public:
     b2Body* mBody;
 };
 
-class PolygonRigidbody
+class Rigidbody
+{
+public:
+    virtual ~Rigidbody() {}
+};
+
+class PolygonRigidbody : public Rigidbody
 {
 public:
     PolygonRigidbody(const Vortex2D::Renderer::Device& device,
@@ -65,7 +71,7 @@ public:
     }
 };
 
-class CircleRigidbody
+class CircleRigidbody : public Rigidbody
 {
 public:
     CircleRigidbody(const Vortex2D::Renderer::Device& device,
