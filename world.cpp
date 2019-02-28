@@ -101,6 +101,22 @@ void World::Render()
                 mWorld.AddRigidbody(rigidbody->mRigidbody);
                 mRigidbodies.emplace_back(std::move(rigidbody));
             }
+            else if (shape.mType == Shape::Type::Rectangle)
+            {
+                auto size = shape.mSize / mScale;
+                auto rigidbody = std::make_unique<RectangleRigidbody>(mDevice,
+                                                                      mSize,
+                                                                      mBox2DWorld,
+                                                                      GetBox2DType(box2dType),
+                                                                      GetVortex2DType(vortex2dType),
+                                                                      size);
+
+                glm::vec2 pos = shape.mShape->Position;
+                float angle = shape.mShape->Rotation;
+                rigidbody->mRigidbody.SetTransform(pos / mScale, angle);
+                mWorld.AddRigidbody(rigidbody->mRigidbody);
+                mRigidbodies.emplace_back(std::move(rigidbody));
+            }
         }
 
         ImGui::End();
@@ -109,9 +125,10 @@ void World::Render()
     auto& io = ImGui::GetIO();
     if (!io.WantCaptureMouse && io.MouseClicked[1])
     {
-        glm::vec2 radius(16.0f);
+        glm::vec2 radius(32.0f);
         Vortex2D::Renderer::IntRectangle fluid(mDevice, radius);
         fluid.Position = {io.MouseClickedPos[1].x / mScale, io.MouseClickedPos[1].y / mScale};
+        fluid.Anchor = {16.0f, 16.0f};
         fluid.Colour = glm::vec4(4);
 
         mWorld.RecordParticleCount({fluid}).Submit().Wait();

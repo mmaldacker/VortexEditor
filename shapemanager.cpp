@@ -1,4 +1,8 @@
 #include "shapemanager.h"
+#include <GLFW/glfw3.h>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/vector_angle.hpp>
 
 ShapeManager::ShapeManager(const Vortex2D::Renderer::Device& device, std::vector<Shape>& shapes)
     : mDevice(device)
@@ -52,9 +56,22 @@ void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
 
     if (type == 0 && !io.WantCaptureMouse && io.MouseDown[0])
     {
-        auto size = glm::vec2{io.MouseDelta.x, io.MouseDelta.y};
         auto currentShape = mShapes[currentShapeIndex].mShape;
-        currentShape->Position = size + (glm::vec2)currentShape->Position;
+        if (io.KeysDown[GLFW_KEY_LEFT_CONTROL])
+        {
+            // rotation
+            glm::vec2 centre = currentShape->Position;
+            glm::vec2 v1 = {io.MouseClickedPos[0].x - centre.x, io.MouseClickedPos[0].y - centre.y};
+            glm::vec2 v2 = {io.MousePos.x - centre.x, io.MousePos.y - centre.y};
+            auto angle = glm::orientedAngle(glm::normalize(v1), glm::normalize(v2));
+            currentShape->Rotation = glm::degrees(angle);
+        }
+        else
+        {
+            // translation
+            auto size = glm::vec2{io.MouseDelta.x, io.MouseDelta.y};
+            currentShape->Position = size + currentShape->Position;
+        }
     }
 
     if (type == 1 && !io.WantCaptureMouse && io.MouseDown[0])
@@ -69,7 +86,10 @@ void ShapeManager::Render(Vortex2D::Renderer::RenderTarget& target)
         }
         else if (shapeType == 1)
         {
-            mBuildShape = std::make_shared<Vortex2D::Renderer::Rectangle>(mDevice, size);
+            mBuildShape = std::make_shared<Vortex2D::Renderer::Rectangle>(mDevice, size * glm::vec2(2.0f));
+            mBuildShape->Anchor = size;
+            currentSize = size;
+            currentType = Shape::Type::Rectangle;
         }
 
         mBuildShape->Position = {io.MouseClickedPos[0].x, io.MouseClickedPos[0].y};
