@@ -22,8 +22,8 @@ private:
     float mScale;
     std::vector<EntityPtr>& mEntities;
 
-    Vortex2D::Fluid::World& mWorld;
     b2World& mBox2dWorld;
+    Vortex2D::Fluid::World& mWorld;
 
     std::unique_ptr<Vortex2D::Renderer::Shape> mBuildShape;
     Vortex2D::Renderer::RenderCommand mBuildCmd;

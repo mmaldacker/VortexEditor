@@ -39,6 +39,7 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
     static glm::vec4 color = glm::vec4(92.0f, 173.0f, 159.0f, 255.0f) / glm::vec4(255.0f);;
     static uint64_t id = 0;
     static ShapeType shapeType = Rectangle{};
+    static b2Fixture* currentFixture = nullptr;
 
     if (ImGui::Begin("Entity Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
@@ -50,19 +51,22 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
         {
             shapeType = Rectangle{};
         }
-        ImGui::ColorPicker4("Color", &color.r);
         ImGui::End();
     }
 
     if (!io.WantCaptureMouse && io.MouseDown[0])
     {
-        QueryCallback callback;
-        b2Vec2 mousePos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
-        mBox2dWorld.QueryAABB(&callback, {mousePos, mousePos});
-
-        if (callback.mContactFixture != nullptr)
+        if (currentFixture == nullptr)
         {
-            auto& entity = *static_cast<Entity*>(callback.mContactFixture->GetBody()->GetUserData());
+            QueryCallback callback;
+            b2Vec2 mousePos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
+            mBox2dWorld.QueryAABB(&callback, {mousePos, mousePos});
+            currentFixture = callback.mContactFixture;
+        }
+
+        if (currentFixture != nullptr)
+        {
+            auto& entity = *static_cast<Entity*>(currentFixture->GetBody()->GetUserData());
             glm::vec2 centre = entity.mShape->Position;
 
             if (io.KeysDown[GLFW_KEY_LEFT_CONTROL])
@@ -96,7 +100,7 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
                     mBuildShape = std::make_unique<Vortex2D::Renderer::Ellipse>(mDevice, glm::vec2(radius, radius));
                     circle.mRadius = radius;
                 },
-                [&](Polygon& polygon)
+                [&](Polygon& /*polygon*/)
                 {
 
                 });
@@ -105,6 +109,11 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
             mBuildShape->Colour = color;
             mBuildCmd = target.Record({*mBuildShape});
         }
+    }
+
+    if (!io.WantCaptureMouse && io.MouseReleased[0])
+    {
+        currentFixture = nullptr;
     }
 
     if (!io.WantCaptureMouse && io.MouseReleased[0] && mBuildShape && IsValid(shapeType))

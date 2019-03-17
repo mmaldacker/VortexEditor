@@ -97,9 +97,10 @@ void World::Render()
         ImGui::PopID();
         if (ImGui::Button("Update"))
         {
-            auto& shape = mEntities[currentShapeIndex];
-            //shape.MakeRigidbody(mDevice, mSize, GetVortex2DType(vortex2dType), mBox2DWorld, GetBox2DType(box2dType), mScale);
-            //mWorld.AddRigidbody(*shape.mRigidbody->mRigidbody);
+            auto& entity = mEntities[currentShapeIndex];
+            entity->mRigidbody->mBody->SetType(GetBox2DType(box2dType));
+            entity->mRigidbody->mRigidbody->SetType(GetVortex2DType(vortex2dType));
+            entity->mShape->Colour = glm::vec4(208.0f, 43.0f, 10.0f, 255.0f) / glm::vec4(255.0f);
         }
 
         ImGui::End();
@@ -120,6 +121,14 @@ void World::Render()
     mWorld.SubmitVelocity(mVelocityRender);
     auto params = Vortex2D::Fluid::FixedParams(12);
     mWorld.Step(params);
+
+    for (auto& entity: mEntities)
+    {
+        if (entity->mRigidbody->mBody->GetType() == b2_dynamicBody)
+        {
+            entity->UpdateTransform();
+        }
+    }
 
     mWindowRender.Submit(glm::scale(glm::vec3(mScale, mScale, 1.0f)));
 }
