@@ -3,6 +3,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/transform.hpp>
 
+#include <imgui.h>
+
 namespace
 {
 b2BodyType GetBox2DType(int type)
@@ -37,14 +39,14 @@ const float gravityForce = 100.0f;
 
 }
 
-World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<Shape>& shapes)
+World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<Entity>& entities)
     : mDevice(device)
     , mSize(size)
     , mScale(scale)
     , mWorld(device, size, ImGui::GetIO().DeltaTime, 2)
     , mBox2DWorld(b2Vec2(0.0f, gravityForce))
     , mBox2DSolver(mBox2DWorld)
-    , mShapes(shapes)
+    , mEntities(entities)
     , mGravity(device, size)
     , mLiquidPhi(mWorld.LiquidDistanceField())
 {
@@ -68,9 +70,9 @@ void World::Render()
     if (ImGui::Begin("World Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Combo("Shapes", &currentShapeIndex, +[](void* data, int idx, const char** outStr) {
-            *outStr = ((Shape*)data)[idx].mName.c_str();
+            *outStr = ((Entity*)data)[idx].mId.c_str();
             return true;
-        }, mShapes.data(), mShapes.size());
+        }, mEntities.data(), mEntities.size());
 
         ImGui::PushID("box2dtype");
         ImGui::Text("Box2D Type");
@@ -85,38 +87,9 @@ void World::Render()
         ImGui::PopID();
         if (ImGui::Button("Add"))
         {
-            auto& shape = mShapes[currentShapeIndex];
-            if (shape.mType == Shape::Type::Circle)
-            {
-                auto radius = shape.mSize.x / mScale;
-                auto rigidbody = std::make_unique<CircleRigidbody>(mDevice,
-                                                                   mSize,
-                                                                   mBox2DWorld,
-                                                                   GetBox2DType(box2dType),
-                                                                   GetVortex2DType(vortex2dType),
-                                                                   radius);
-
-                glm::vec2 pos = shape.mShape->Position;
-                rigidbody->mRigidbody.SetTransform(pos / mScale, 0.0f);
-                mWorld.AddRigidbody(rigidbody->mRigidbody);
-                mRigidbodies.emplace_back(std::move(rigidbody));
-            }
-            else if (shape.mType == Shape::Type::Rectangle)
-            {
-                auto size = shape.mSize / mScale;
-                auto rigidbody = std::make_unique<RectangleRigidbody>(mDevice,
-                                                                      mSize,
-                                                                      mBox2DWorld,
-                                                                      GetBox2DType(box2dType),
-                                                                      GetVortex2DType(vortex2dType),
-                                                                      size);
-
-                glm::vec2 pos = shape.mShape->Position;
-                float angle = shape.mShape->Rotation;
-                rigidbody->mRigidbody.SetTransform(pos / mScale, angle);
-                mWorld.AddRigidbody(rigidbody->mRigidbody);
-                mRigidbodies.emplace_back(std::move(rigidbody));
-            }
+            auto& shape = mEntities[currentShapeIndex];
+            shape.MakeRigidbody(mDevice, mSize, GetVortex2DType(vortex2dType), mBox2DWorld, GetBox2DType(box2dType), mScale);
+            mWorld.AddRigidbody(*shape.mRigidbody->mRigidbody);
         }
 
         ImGui::End();

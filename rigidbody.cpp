@@ -70,8 +70,10 @@ void Box2DSolver::Step(float delta)
 Box2DRigidbody::Box2DRigidbody(const Vortex2D::Renderer::Device& device,
                                const glm::ivec2& size,
                                Vortex2D::Renderer::Drawable& drawable,
-                               Vortex2D::Fluid::RigidBody::Type type)
+                               Vortex2D::Fluid::RigidBody::Type type,
+                               b2Body* body)
     : Vortex2D::Fluid::RigidBody(device, size, drawable, type)
+    , mBody(body)
 {
 }
 
@@ -101,10 +103,10 @@ void Box2DRigidbody::ApplyVelocities()
     }
 }
 
-void Box2DRigidbody::SetTransform(const glm::vec2& pos, float angle)
+void Rigidbody::SetTransform(const glm::vec2& pos, float angle)
 {
-    Position = pos;
-    Rotation = angle;
+    mRigidbody->Position = pos;
+    mRigidbody->Rotation = angle;
     mBody->SetTransform({pos.x, pos.y}, glm::radians(angle));
 }
 
@@ -116,10 +118,10 @@ PolygonRigidbody::PolygonRigidbody(const Vortex2D::Renderer::Device& device,
                                    const std::vector<glm::vec2>& points,
                                    float density)
     : mPolygon(device, points)
-    , mRigidbody(device, size, mPolygon, type)
 {
-    mRigidbody.mBody = CreateBody(rWorld, GetPolygonFixtureDef(points), rType, density);
-    mRigidbody.SetMassData(mRigidbody.mBody->GetMass(), mRigidbody.mBody->GetInertia());
+    mBody = CreateBody(rWorld, GetPolygonFixtureDef(points), rType, density);
+    mRigidbody = std::make_unique<Box2DRigidbody>(device, size, mPolygon, type, mBody);
+    mRigidbody->SetMassData(mBody->GetMass(), mBody->GetInertia());
 }
 
 CircleRigidbody::CircleRigidbody(const Vortex2D::Renderer::Device& device,
@@ -130,9 +132,9 @@ CircleRigidbody::CircleRigidbody(const Vortex2D::Renderer::Device& device,
                                  const float radius,
                                  float density)
     : mCircle(device, radius)
-    , mRigidbody(device, size, mCircle, type)
 {
-    mRigidbody.mBody = CreateBody(rWorld, GetCircleFixtureDef(radius), rType, density);
-    mRigidbody.SetMassData(mRigidbody.mBody->GetMass(), mRigidbody.mBody->GetInertia());
+    mBody = CreateBody(rWorld, GetCircleFixtureDef(radius), rType, density);
+    mRigidbody = std::make_unique<Box2DRigidbody>(device, size, mCircle, type, mBody);
+    mRigidbody->SetMassData(mBody->GetMass(), mBody->GetInertia());
 }
 

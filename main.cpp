@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <chrono>
 #include "imguirenderer.h"
-#include "shapemanager.h"
+#include "shaperenderer.h"
 #include "world.h"
 
 std::vector<const char*> GetGLFWExtensions()
@@ -166,9 +166,9 @@ int main(int argc, char** argv)
         ImGuiRenderer renderer(device);
         Vortex2D::Renderer::RenderCommand imguiCmd;
 
-        std::vector<Shape> shapes;
-        ShapeManager shapeManager(device, shapes);
-        World world(device, fluidSize, fluidScale, shapes);
+        std::vector<Entity> entities;
+        ShapeRenderer shapeManager(device, entities);
+        World world(device, fluidSize, fluidScale, entities);
 
         Vortex2D::Renderer::ColorBlendState blendState;
         blendState.ColorBlend

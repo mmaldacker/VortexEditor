@@ -20,12 +20,12 @@ public:
     Box2DRigidbody(const Vortex2D::Renderer::Device& device,
                    const glm::ivec2& size,
                    Vortex2D::Renderer::Drawable& drawable,
-                   Vortex2D::Fluid::RigidBody::Type type);
+                   Vortex2D::Fluid::RigidBody::Type type,
+                   b2Body* body);
 
+private:
     void ApplyForces();
     void ApplyVelocities();
-
-    void SetTransform(const glm::vec2& pos, float angle);
 
     b2Body* mBody;
 };
@@ -34,6 +34,11 @@ class Rigidbody
 {
 public:
     virtual ~Rigidbody() {}
+
+    void SetTransform(const glm::vec2& pos, float angle);
+
+    std::unique_ptr<Box2DRigidbody> mRigidbody;
+    b2Body* mBody;
 };
 
 class PolygonRigidbody : public Rigidbody
@@ -48,7 +53,6 @@ public:
                      float density = 1.0f);
 
     Vortex2D::Fluid::Polygon mPolygon;
-    Box2DRigidbody mRigidbody;
 };
 
 class RectangleRigidbody : public PolygonRigidbody
@@ -83,5 +87,4 @@ public:
                     float density = 1.0f);
 
     Vortex2D::Fluid::Circle mCircle;
-    Box2DRigidbody mRigidbody;
 };
