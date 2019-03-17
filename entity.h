@@ -23,18 +23,26 @@ using ShapeType = mapbox::util::variant<Circle, Rectangle, Polygon>;
 
 struct Entity
 {
-    std::unique_ptr<Vortex2D::Renderer::Shape> mShape;
-    ShapeType mShapeType;
-    Vortex2D::Renderer::RenderCommand mCmd;
+    float mScale;
     std::string mId;
+    ShapeType mShapeType;
+    std::unique_ptr<Vortex2D::Renderer::Shape> mShape;
+    Vortex2D::Renderer::RenderCommand mCmd;
     std::unique_ptr<Rigidbody> mRigidbody;
 
-    void MakeRigidbody(const Vortex2D::Renderer::Device& device,
-                       const glm::ivec2& size,
-                       Vortex2D::Fluid::RigidBody::Type type,
-                       b2World& box2dWorld,
-                       b2BodyType box2dType,
-                       float scale)
+    Entity(const Vortex2D::Renderer::Device& device,
+           const glm::ivec2& size,
+           float scale,
+           const std::string& id,
+           ShapeType type,
+           std::unique_ptr<Vortex2D::Renderer::Shape> shape,
+           Vortex2D::Renderer::RenderCommand cmd,
+           b2World& box2dWorld)
+        : mScale(scale)
+        , mId(id)
+        , mShapeType(type)
+        , mShape(std::move(shape))
+        , mCmd(std::move(cmd))
     {
         mShapeType.match(
             [&](const Circle& circle)
@@ -43,35 +51,52 @@ struct Entity
                 mRigidbody = std::make_unique<CircleRigidbody>(device,
                                                                size,
                                                                box2dWorld,
-                                                               box2dType,
-                                                               type,
+                                                               b2_staticBody,
+                                                               Vortex2D::Fluid::RigidBody::Type::eStatic,
                                                                radius);
             },
             [&](const Rectangle& rectangle)
             {
-                auto size = rectangle.mSize / scale;
+                auto rectSize = rectangle.mSize / scale;
                 mRigidbody = std::make_unique<RectangleRigidbody>(device,
                                                                   size,
                                                                   box2dWorld,
-                                                                  box2dType,
-                                                                  type,
-                                                                  size);
+                                                                  b2_staticBody,
+                                                                  Vortex2D::Fluid::RigidBody::Type::eStatic,
+                                                                  rectSize);
             },
             [&](const Polygon& /*polygon*/)
             {
 
             });
 
-        glm::vec2 pos = mShape->Position;
-        float angle = mShape->Rotation;
-        mRigidbody->SetTransform(pos / scale, angle);
+        mRigidbody->SetTransform(mShape->Position / mScale, mShape->Rotation);
+        mRigidbody->mBody->SetUserData(this);
+    }
+
+    void SetTransform(const glm::vec2& pos, float angle)
+    {
+        mShape->Position = pos;
+        mShape->Rotation = angle;
+        mRigidbody->SetTransform(pos / mScale, angle);
     }
 };
 
-inline Entity Create(const std::string& id,
-                     ShapeType type,
-                     std::unique_ptr<Vortex2D::Renderer::Shape> shape,
-                     Vortex2D::Renderer::RenderCommand cmd)
+using EntityPtr = std::unique_ptr<Entity>;
+
+inline bool IsValid(const ShapeType& type)
 {
-    return {std::move(shape), type, std::move(cmd), id, {}};
+    return type.match(
+        [&](const Circle& circle)
+        {
+            return circle.mRadius > 0.0f;
+        },
+        [&](const Rectangle& rectangle)
+        {
+            return rectangle.mSize.x > 0.0f && rectangle.mSize.y > 0.0f;
+        },
+        [&](const Polygon& /*polygon*/)
+        {
+            return false;
+        });
 }

@@ -39,7 +39,7 @@ const float gravityForce = 100.0f;
 
 }
 
-World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<Entity>& entities)
+World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<EntityPtr>& entities)
     : mDevice(device)
     , mSize(size)
     , mScale(scale)
@@ -56,6 +56,16 @@ World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, f
     mVelocityRender = mWorld.RecordVelocity({mGravity}, Vortex2D::Fluid::VelocityOp::Add);
 }
 
+b2World& World::GetBox2dWorld()
+{
+    return mBox2DWorld;
+}
+
+Vortex2D::Fluid::World& World::GetWorld()
+{
+    return mWorld;
+}
+
 void World::Record(Vortex2D::Renderer::RenderTarget& target, Vortex2D::Renderer::ColorBlendState blendState)
 {
     mWindowRender = target.Record({mLiquidPhi}, blendState);
@@ -70,7 +80,7 @@ void World::Render()
     if (ImGui::Begin("World Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Combo("Shapes", &currentShapeIndex, +[](void* data, int idx, const char** outStr) {
-            *outStr = ((Entity*)data)[idx].mId.c_str();
+            *outStr = static_cast<EntityPtr*>(data)[idx]->mId.c_str();
             return true;
         }, mEntities.data(), mEntities.size());
 
@@ -85,11 +95,11 @@ void World::Render()
         ImGui::RadioButton("Weak", &vortex2dType, 1);
         ImGui::RadioButton("Strong", &vortex2dType, 2);
         ImGui::PopID();
-        if (ImGui::Button("Add"))
+        if (ImGui::Button("Update"))
         {
             auto& shape = mEntities[currentShapeIndex];
-            shape.MakeRigidbody(mDevice, mSize, GetVortex2DType(vortex2dType), mBox2DWorld, GetBox2DType(box2dType), mScale);
-            mWorld.AddRigidbody(*shape.mRigidbody->mRigidbody);
+            //shape.MakeRigidbody(mDevice, mSize, GetVortex2DType(vortex2dType), mBox2DWorld, GetBox2DType(box2dType), mScale);
+            //mWorld.AddRigidbody(*shape.mRigidbody->mRigidbody);
         }
 
         ImGui::End();

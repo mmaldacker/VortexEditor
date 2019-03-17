@@ -166,9 +166,9 @@ int main(int argc, char** argv)
         ImGuiRenderer renderer(device);
         Vortex2D::Renderer::RenderCommand imguiCmd;
 
-        std::vector<Entity> entities;
-        ShapeRenderer shapeManager(device, entities);
+        std::vector<EntityPtr> entities;
         World world(device, fluidSize, fluidScale, entities);
+        ShapeRenderer shapeRenderer(device, fluidSize, fluidScale, entities, world.GetBox2dWorld(), world.GetWorld());
 
         Vortex2D::Renderer::ColorBlendState blendState;
         blendState.ColorBlend
@@ -204,7 +204,7 @@ int main(int argc, char** argv)
             }
 
             world.Render();
-            shapeManager.Render(window);
+            shapeRenderer.Render(window);
 
             ImGui::Render();
 

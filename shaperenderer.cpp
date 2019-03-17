@@ -5,9 +5,29 @@
 
 #include <GLFW/glfw3.h>
 
-ShapeRenderer::ShapeRenderer(const Vortex2D::Renderer::Device& device, std::vector<Entity>& entities)
+struct QueryCallback : b2QueryCallback
+{
+    bool ReportFixture(b2Fixture* fixture) override
+    {
+        mContactFixture = fixture;
+        return false;
+    }
+
+    b2Fixture* mContactFixture = nullptr;
+};
+
+ShapeRenderer::ShapeRenderer(const Vortex2D::Renderer::Device& device,
+                             const glm::ivec2& size,
+                             float scale,
+                             std::vector<EntityPtr>& entities,
+                             b2World& box2dWorld,
+                             Vortex2D::Fluid::World& world)
     : mDevice(device)
-    , mEntities(entities)
+      , mSize(size)
+      , mScale(scale)
+      , mEntities(entities)
+      , mBox2dWorld(box2dWorld)
+      , mWorld(world)
 {
 }
 
@@ -15,98 +35,96 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
 {
     auto& io = ImGui::GetIO();
 
-    static int type = 1;
     static int shapeIndex = 1;
     static glm::vec4 color = glm::vec4(92.0f, 173.0f, 159.0f, 255.0f) / glm::vec4(255.0f);;
     static uint64_t id = 0;
     static ShapeType shapeType = Rectangle{};
-    static int currentShapeIndex = 0;
 
     if (ImGui::Begin("Entity Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::RadioButton("Move", &type, 0);
-        ImGui::SameLine();
-        ImGui::RadioButton("Create", &type, 1);
-        ImGui::Separator();
-
-        if (type == 0)
+        if (ImGui::RadioButton("Circle", &shapeIndex, 0))
         {
-            ImGui::Combo("Shapes", &currentShapeIndex, +[](void* data, int idx, const char** outStr) {
-                *outStr = ((Entity*)data)[idx].mId.c_str();
-                return true;
-            }, mEntities.data(), mEntities.size());
+            shapeType = Circle{};
         }
-        else if (type == 1)
+        if (ImGui::RadioButton("Rectangle", &shapeIndex, 1))
         {
-            ImGui::PushID(1);
-            if (ImGui::RadioButton("Circle", &shapeIndex, 0))
-            {
-                shapeType = Circle{};
-            }
-            if (ImGui::RadioButton("Rectangle", &shapeIndex, 1))
-            {
-                shapeType = Rectangle{};
-            }
-            ImGui::ColorPicker4("Color", &color.r);
-            if (ImGui::Button("Create"))
-            {
-                auto entity = Create(std::to_string(++id), shapeType, std::move(mBuildShape), std::move(mBuildCmd));
-                mEntities.push_back(std::move(entity));
-            }
-            ImGui::PopID();
+            shapeType = Rectangle{};
         }
+        ImGui::ColorPicker4("Color", &color.r);
         ImGui::End();
     }
 
-    if (type == 0 && !io.WantCaptureMouse && io.MouseDown[0])
+    if (!io.WantCaptureMouse && io.MouseDown[0])
     {
-        auto& currentShape = *mEntities[currentShapeIndex].mShape;
-        if (io.KeysDown[GLFW_KEY_LEFT_CONTROL])
+        QueryCallback callback;
+        b2Vec2 mousePos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
+        mBox2dWorld.QueryAABB(&callback, {mousePos, mousePos});
+
+        if (callback.mContactFixture != nullptr)
         {
-            // rotation
-            glm::vec2 centre = currentShape.Position;
-            glm::vec2 v1 = {io.MouseClickedPos[0].x - centre.x, io.MouseClickedPos[0].y - centre.y};
-            glm::vec2 v2 = {io.MousePos.x - centre.x, io.MousePos.y - centre.y};
-            auto angle = glm::orientedAngle(glm::normalize(v1), glm::normalize(v2));
-            currentShape.Rotation = glm::degrees(angle);
+            auto& entity = *static_cast<Entity*>(callback.mContactFixture->GetBody()->GetUserData());
+            glm::vec2 centre = entity.mShape->Position;
+
+            if (io.KeysDown[GLFW_KEY_LEFT_CONTROL])
+            {
+                // rotation
+                glm::vec2 v1 = {io.MouseClickedPos[0].x - centre.x, io.MouseClickedPos[0].y - centre.y};
+                glm::vec2 v2 = {io.MousePos.x - centre.x, io.MousePos.y - centre.y};
+                auto angle = glm::orientedAngle(glm::normalize(v1), glm::normalize(v2));
+                entity.SetTransform(centre, glm::degrees(angle));
+            }
+            else
+            {
+                // translation
+                auto delta = glm::vec2{io.MouseDelta.x, io.MouseDelta.y};
+                entity.SetTransform(centre + delta, entity.mShape->Rotation);
+            }
         }
         else
         {
-            // translation
-            auto delta = glm::vec2{io.MouseDelta.x, io.MouseDelta.y};
-            currentShape.Position += delta;
+            auto size = glm::abs(glm::vec2{io.MouseClickedPos[0].x - io.MousePos.x, io.MouseClickedPos[0].y - io.MousePos.y});
+            shapeType.match(
+                [&](Rectangle& rectangle)
+                {
+                    mBuildShape = std::make_unique<Vortex2D::Renderer::Rectangle>(mDevice, size * glm::vec2(2.0f));
+                    mBuildShape->Anchor = size;
+                    rectangle.mSize = size;
+                },
+                [&](Circle& circle)
+                {
+                    auto radius = glm::length(size);
+                    mBuildShape = std::make_unique<Vortex2D::Renderer::Ellipse>(mDevice, glm::vec2(radius, radius));
+                    circle.mRadius = radius;
+                },
+                [&](Polygon& polygon)
+                {
+
+                });
+
+            mBuildShape->Position = {io.MouseClickedPos[0].x, io.MouseClickedPos[0].y};
+            mBuildShape->Colour = color;
+            mBuildCmd = target.Record({*mBuildShape});
         }
     }
 
-    if (type == 1 && !io.WantCaptureMouse && io.MouseDown[0])
+    if (!io.WantCaptureMouse && io.MouseReleased[0] && mBuildShape && IsValid(shapeType))
     {
-        auto size = glm::abs(glm::vec2{io.MouseClickedPos[0].x - io.MousePos.x, io.MouseClickedPos[0].y - io.MousePos.y});
-        shapeType.match(
-        [&](Rectangle& rectangle)
-        {
-                mBuildShape = std::make_unique<Vortex2D::Renderer::Rectangle>(mDevice, size * glm::vec2(2.0f));
-                mBuildShape->Anchor = size;
-                rectangle.mSize = size;
-        },
-        [&](Circle& circle)
-        {
-                auto radius = glm::length(size);
-                mBuildShape = std::make_unique<Vortex2D::Renderer::Ellipse>(mDevice, glm::vec2(radius, radius));
-                circle.mRadius = radius;
-        },
-        [&](Polygon& polygon)
-        {
+        EntityPtr entity = std::make_unique<Entity>(mDevice,
+                                                    mSize,
+                                                    mScale,
+                                                    std::to_string(++id),
+                                                    shapeType,
+                                                    std::move(mBuildShape),
+                                                    std::move(mBuildCmd),
+                                                    mBox2dWorld);
 
-        });
-
-        mBuildShape->Position = {io.MouseClickedPos[0].x, io.MouseClickedPos[0].y};
-        mBuildShape->Colour = color;
-        mBuildCmd = target.Record({*mBuildShape});
+        mWorld.AddRigidbody(*entity->mRigidbody->mRigidbody);
+        mEntities.push_back(std::move(entity));
     }
 
     mBuildCmd.Submit();
     for (auto& entity: mEntities)
     {
-        entity.mCmd.Submit();
+        entity->mCmd.Submit();
     }
 }

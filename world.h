@@ -7,7 +7,10 @@
 class World
 {
 public:
-    World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<Entity>& entities);
+    World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<EntityPtr>& entities);
+
+    b2World& GetBox2dWorld();
+    Vortex2D::Fluid::World& GetWorld();
 
     void Record(Vortex2D::Renderer::RenderTarget& target, Vortex2D::Renderer::ColorBlendState blendState);
     void Render();
@@ -18,7 +21,7 @@ private:
     Vortex2D::Fluid::WaterWorld mWorld;
     b2World mBox2DWorld;
     Box2DSolver mBox2DSolver;
-    std::vector<Entity>& mEntities;
+    std::vector<EntityPtr>& mEntities;
     Vortex2D::Renderer::Rectangle mGravity;
     Vortex2D::Fluid::DistanceField mLiquidPhi;
     Vortex2D::Renderer::RenderCommand mVelocityRender, mWindowRender;
