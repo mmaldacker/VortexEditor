@@ -4,6 +4,7 @@
 #include <glm/gtx/vector_angle.hpp>
 
 #include <GLFW/glfw3.h>
+#include <Box2D/Box2D.h>
 
 struct QueryCallback : b2QueryCallback
 {

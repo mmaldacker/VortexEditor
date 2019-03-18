@@ -38,7 +38,7 @@ ImGuiRenderer::ImGuiRenderer(const Vortex2D::Renderer::Device& device)
     vk::ShaderModule vertexShader = device.GetShaderModule(Vortex2D::SPIRV::imgui_vert);
     vk::ShaderModule fragShader = device.GetShaderModule(Vortex2D::SPIRV::imgui_frag);
 
-    mPipeline = Vortex2D::Renderer::GraphicsPipeline::Builder()
+    mPipeline = Vortex2D::Renderer::GraphicsPipeline()
                     .Shader(vertexShader, vk::ShaderStageFlagBits::eVertex)
                     .Shader(fragShader, vk::ShaderStageFlagBits::eFragment)
                     .VertexAttribute(0, 0, vk::Format::eR32G32Sfloat, offsetof(ImDrawVert, pos))
@@ -94,10 +94,10 @@ void ImGuiRenderer::Update()
 
 void ImGuiRenderer::Initialize(const Vortex2D::Renderer::RenderState& renderState)
 {
-    mPipeline.Create(mDevice.Handle(), renderState);
+    mDevice.GetPipelineCache().CreateGraphicsPipeline(mPipeline, renderState);
 }
 
-void ImGuiRenderer::Update(const glm::mat4& projection, const glm::mat4& view)
+void ImGuiRenderer::Update(const glm::mat4& /*projection*/, const glm::mat4& /*view*/)
 {
 
 }
@@ -110,7 +110,8 @@ void ImGuiRenderer::Draw(vk::CommandBuffer commandBuffer, const Vortex2D::Render
         return;
     }
 
-    mPipeline.Bind(commandBuffer, renderState);
+    auto pipeline = mDevice.GetPipelineCache().CreateGraphicsPipeline(mPipeline, renderState);
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
     commandBuffer.bindVertexBuffers(0, {mVertexBuffer.Handle()}, {0ul});
     commandBuffer.bindIndexBuffer(mIndexBuffer.Handle(), 0, vk::IndexType::eUint16);
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
