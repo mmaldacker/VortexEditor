@@ -62,7 +62,10 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
             QueryCallback callback;
             b2Vec2 mousePos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
             mBox2dWorld.QueryAABB(&callback, {mousePos, mousePos});
-            currentFixture = callback.mContactFixture;
+            if (callback.mContactFixture != nullptr && callback.mContactFixture->TestPoint(mousePos))
+            {
+                currentFixture = callback.mContactFixture;
+            }
         }
 
         if (currentFixture != nullptr)
@@ -91,14 +94,17 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
             shapeType.match(
                 [&](Rectangle& rectangle)
                 {
-                    mBuildShape = std::make_unique<Vortex2D::Renderer::Rectangle>(mDevice, size * glm::vec2(2.0f));
-                    mBuildShape->Anchor = size;
+                    auto halfSize = size / glm::vec2(2.0f);
+                    mBuildShape = std::make_unique<Vortex2D::Renderer::Rectangle>(mDevice, size);
+                    mBuildShape->Position = glm::vec2(io.MouseClickedPos[0].x, io.MouseClickedPos[0].y) + halfSize;
+                    mBuildShape->Anchor = halfSize;
                     rectangle.mSize = size;
                 },
                 [&](Circle& circle)
                 {
                     auto radius = glm::length(size);
                     mBuildShape = std::make_unique<Vortex2D::Renderer::Ellipse>(mDevice, glm::vec2(radius, radius));
+                    mBuildShape->Position = {io.MouseClickedPos[0].x, io.MouseClickedPos[0].y};
                     circle.mRadius = radius;
                 },
                 [&](Polygon& /*polygon*/)
@@ -106,9 +112,18 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
 
                 });
 
-            mBuildShape->Position = {io.MouseClickedPos[0].x, io.MouseClickedPos[0].y};
             mBuildShape->Colour = color;
-            mBuildCmd = target.Record({*mBuildShape});
+
+            Vortex2D::Renderer::ColorBlendState blendState;
+            blendState.ColorBlend.setBlendEnable(true)
+                .setAlphaBlendOp(vk::BlendOp::eAdd)
+                .setColorBlendOp(vk::BlendOp::eAdd)
+                .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+                .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
+                .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+                .setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+
+            mBuildCmd = target.Record({*mBuildShape}, blendState);
         }
     }
 

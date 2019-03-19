@@ -73,26 +73,38 @@ void World::Record(Vortex2D::Renderer::RenderTarget& target, Vortex2D::Renderer:
 
 void World::Render()
 {
-    static int currentShapeIndex = 0;
+    static int currentShapeIndex = -1;
     static int box2dType = 0;
     static int vortex2dType = 0;
 
     if (ImGui::Begin("World Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Combo("Shapes", &currentShapeIndex, +[](void* data, int idx, const char** outStr) {
-            *outStr = static_cast<EntityPtr*>(data)[idx]->mId.c_str();
-            return true;
-        }, mEntities.data(), mEntities.size());
+        if (ImGui::BeginCombo("Entities", currentShapeIndex >= 0 ? mEntities[currentShapeIndex]->mId.c_str() : "N/A"))
+        {
+            if (ImGui::Selectable("N/A", currentShapeIndex == -1))
+            {
+                currentShapeIndex = -1;
+            }
+            for (int i = 0; i < static_cast<int>(mEntities.size()); i++)
+            {
+                const bool itemSelected = i == currentShapeIndex;
+                if (ImGui::Selectable(mEntities[i]->mId.c_str(), itemSelected))
+                {
+                    currentShapeIndex = i;
+                }
+            }
+            ImGui::EndCombo();
+        }
 
         ImGui::PushID("box2dtype");
         ImGui::Text("Box2D Type");
-        ImGui::RadioButton("Static", &box2dType, 0);
+        ImGui::RadioButton("Static", &box2dType, 0); ImGui::SameLine();
         ImGui::RadioButton("Dynamic", &box2dType, 1);
         ImGui::PopID();
         ImGui::PushID("vortex2dtype");
         ImGui::Text("Vortex2D Type");
-        ImGui::RadioButton("Static", &vortex2dType, 0);
-        ImGui::RadioButton("Weak", &vortex2dType, 1);
+        ImGui::RadioButton("Static", &vortex2dType, 0); ImGui::SameLine();
+        ImGui::RadioButton("Weak", &vortex2dType, 1); ImGui::SameLine();
         ImGui::RadioButton("Strong", &vortex2dType, 2);
         ImGui::PopID();
         if (ImGui::Button("Update"))
@@ -102,7 +114,19 @@ void World::Render()
             entity->mRigidbody->mRigidbody->SetType(GetVortex2DType(vortex2dType));
             entity->mShape->Colour = glm::vec4(208.0f, 43.0f, 10.0f, 255.0f) / glm::vec4(255.0f);
         }
-
+        ImGui::SameLine();
+        if (ImGui::Button("Delete"))
+        {
+            if (currentShapeIndex >= 0)
+            {
+                auto& entity = *mEntities[currentShapeIndex];
+                entity.mCmd.Wait();
+                mWorld.RemoveRigidBody(*entity.mRigidbody->mRigidbody);
+                mBox2DWorld.DestroyBody(entity.mRigidbody->mBody);
+                mEntities.erase(mEntities.begin() + currentShapeIndex);
+                currentShapeIndex = -1;
+            }
+        }
         ImGui::End();
     }
 
@@ -122,11 +146,21 @@ void World::Render()
     auto params = Vortex2D::Fluid::FixedParams(12);
     mWorld.Step(params);
 
-    for (auto& entity: mEntities)
+    for (int i = 0; i < mEntities.size(); i++)
     {
-        if (entity->mRigidbody->mBody->GetType() == b2_dynamicBody)
+        auto& entity = *mEntities[i];
+        if (i == currentShapeIndex)
         {
-            entity->UpdateTransform();
+            entity.mShape->Colour.a = 0.2f;
+        }
+        else
+        {
+            entity.mShape->Colour.a = 1.0f;
+        }
+
+        if (entity.mRigidbody->mBody->GetType() == b2_dynamicBody)
+        {
+            entity.UpdateTransform();
         }
     }
 

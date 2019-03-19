@@ -27,13 +27,13 @@ Entity::Entity(const Vortex2D::Renderer::Device& device,
         },
         [&](const Rectangle& rectangle)
         {
-            auto rectSize = rectangle.mSize / scale;
+            auto halfRectSize = rectangle.mSize / (glm::vec2(2.0f) * scale);
             mRigidbody = std::make_unique<RectangleRigidbody>(device,
                                                               size,
                                                               box2dWorld,
                                                               b2_staticBody,
                                                               Vortex2D::Fluid::RigidBody::Type::eStatic,
-                                                              rectSize);
+                                                              halfRectSize);
         },
         [&](const Polygon& /*polygon*/)
         {
