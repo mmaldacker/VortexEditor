@@ -36,7 +36,8 @@ Vortex2D::Fluid::RigidBody::Type GetVortex2DType(int type)
 }
 
 const float gravityForce = 100.0f;
-
+const glm::vec2 radius(16.0f);
+const glm::vec2 anchor = radius / glm::vec2(2.0f);
 }
 
 World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, float scale, std::vector<EntityPtr>& entities)
@@ -49,11 +50,15 @@ World::World(const Vortex2D::Renderer::Device& device, const glm::ivec2& size, f
     , mEntities(entities)
     , mGravity(device, size)
     , mLiquidPhi(mWorld.LiquidDistanceField())
+    , mForce(device, radius)
+    , mFluid(device, radius)
 {
     mWorld.AttachRigidBodySolver(mBox2DSolver);
     mGravity.Colour = {0.0f, ImGui::GetIO().DeltaTime * gravityForce, 0.0f, 0.0f};
     mLiquidPhi.Colour = glm::vec4(36.0f, 123.0f, 160.0f, 255.0f) / glm::vec4(255.0f);
-    mVelocityRender = mWorld.RecordVelocity({mGravity}, Vortex2D::Fluid::VelocityOp::Add);
+    mForce.Colour = glm::vec4(0.0f);
+    mVelocityRender = mWorld.RecordVelocity({mGravity, mForce}, Vortex2D::Fluid::VelocityOp::Add);
+    mFluidRender = mWorld.RecordParticleCount({mFluid});
 }
 
 b2World& World::GetBox2dWorld()
@@ -113,6 +118,7 @@ void World::Render()
             entity->mRigidbody->mBody->SetType(GetBox2DType(box2dType));
             entity->mRigidbody->mRigidbody->SetType(GetVortex2DType(vortex2dType));
             entity->mShape->Colour = glm::vec4(208.0f, 43.0f, 10.0f, 255.0f) / glm::vec4(255.0f);
+            currentShapeIndex = -1;
         }
         ImGui::SameLine();
         if (ImGui::Button("Delete"))
@@ -131,15 +137,20 @@ void World::Render()
     }
 
     auto& io = ImGui::GetIO();
-    if (!io.WantCaptureMouse && io.MouseClicked[1])
+    if (!io.WantCaptureMouse && io.MouseDown[1])
     {
-        glm::vec2 radius(32.0f);
-        Vortex2D::Renderer::IntRectangle fluid(mDevice, radius);
-        fluid.Position = {io.MouseClickedPos[1].x / mScale, io.MouseClickedPos[1].y / mScale};
-        fluid.Anchor = {16.0f, 16.0f};
-        fluid.Colour = glm::vec4(4);
+        glm::vec2 pos = {io.MouseClickedPos[1].x / mScale, io.MouseClickedPos[1].y / mScale};
+        glm::vec2 currPos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
+        glm::vec2 delta = currPos - pos;
 
-        mWorld.RecordParticleCount({fluid}).Submit().Wait();
+        mFluid.Position = pos;
+        mFluid.Anchor = anchor;
+        mFluid.Colour = glm::vec4(4);
+        mFluidRender.Submit();
+
+        mForce.Position = pos;
+        mForce.Anchor = anchor;
+        mForce.Colour = glm::vec4(delta, 0.0f, 0.0f);
     }
 
     mWorld.SubmitVelocity(mVelocityRender);

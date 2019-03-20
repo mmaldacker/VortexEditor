@@ -24,5 +24,7 @@ private:
     std::vector<EntityPtr>& mEntities;
     Vortex2D::Renderer::Rectangle mGravity;
     Vortex2D::Fluid::DistanceField mLiquidPhi;
-    Vortex2D::Renderer::RenderCommand mVelocityRender, mWindowRender;
+    Vortex2D::Renderer::Rectangle mForce;
+    Vortex2D::Renderer::IntRectangle mFluid;
+    Vortex2D::Renderer::RenderCommand mVelocityRender, mWindowRender, mFluidRender;
 };

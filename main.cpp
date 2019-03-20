@@ -44,7 +44,7 @@ glm::vec2 GetGLFWindowScale(GLFWwindow* window)
 
 GLFWwindow* GetGLFWWindow(const glm::ivec2& size)
 {
-    GLFWwindow* window = glfwCreateWindow(size.x, size.y, "Vortex2D App", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(size.x, size.y, "VortexEditor", nullptr, nullptr);
     if (window == nullptr)
     {
         throw std::runtime_error("Could not create glfw window");

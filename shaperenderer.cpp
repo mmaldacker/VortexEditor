@@ -84,7 +84,7 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
             else
             {
                 // translation
-                auto delta = glm::vec2{io.MouseDelta.x, io.MouseDelta.y};
+                glm::vec2 delta = {io.MouseDelta.x, io.MouseDelta.y};
                 entity.SetTransform(centre + delta, entity.mShape->Rotation);
             }
         }
