@@ -114,11 +114,14 @@ void World::Render()
         ImGui::PopID();
         if (ImGui::Button("Update"))
         {
-            auto& entity = mEntities[currentShapeIndex];
-            entity->mRigidbody->mBody->SetType(GetBox2DType(box2dType));
-            entity->mRigidbody->mRigidbody->SetType(GetVortex2DType(vortex2dType));
-            entity->mShape->Colour = glm::vec4(208.0f, 43.0f, 10.0f, 255.0f) / glm::vec4(255.0f);
-            currentShapeIndex = -1;
+            if (currentShapeIndex >= 0)
+            {
+                auto& entity = *mEntities[currentShapeIndex];
+                entity.mRigidbody->mBody->SetType(GetBox2DType(box2dType));
+                entity.mRigidbody->mRigidbody->SetType(GetVortex2DType(vortex2dType));
+                entity.mShape->Colour = glm::vec4(208.0f, 43.0f, 10.0f, 255.0f) / glm::vec4(255.0f);
+                currentShapeIndex = -1;
+            }
         }
         ImGui::SameLine();
         if (ImGui::Button("Delete"))
@@ -131,6 +134,18 @@ void World::Render()
                 mBox2DWorld.DestroyBody(entity.mRigidbody->mBody);
                 mEntities.erase(mEntities.begin() + currentShapeIndex);
                 currentShapeIndex = -1;
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Clean"))
+        {
+            while (!mEntities.empty())
+            {
+                auto& entity = *mEntities.back();
+                entity.mCmd.Wait();
+                mWorld.RemoveRigidBody(*entity.mRigidbody->mRigidbody);
+                mBox2DWorld.DestroyBody(entity.mRigidbody->mBody);
+                mEntities.pop_back();
             }
         }
         ImGui::End();
