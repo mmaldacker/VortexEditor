@@ -168,6 +168,11 @@ void World::Render()
         mForce.Colour = glm::vec4(delta, 0.0f, 0.0f);
     }
 
+    if (!io.WantCaptureMouse && io.MouseReleased[1])
+    {
+        mForce.Colour = glm::vec4(0.0f);
+    }
+
     mWorld.SubmitVelocity(mVelocityRender);
     auto params = Vortex2D::Fluid::FixedParams(12);
     mWorld.Step(params);
