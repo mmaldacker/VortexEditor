@@ -4,6 +4,10 @@ Editor to play around with Vortex2D.
 
 See https://github.com/mmaldacker/Vortex2D
 
+<p align="middle">
+  <img src="https://github.com/mmaldacker/VortexEditor/raw/master/VortexEditor.png"/> 
+</p>
+
 # Manual
 
 ## Drawing shape
