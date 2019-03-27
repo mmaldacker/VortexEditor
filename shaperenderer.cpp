@@ -42,16 +42,19 @@ void ShapeRenderer::Render(Vortex2D::Renderer::RenderTarget& target)
     static ShapeType shapeType = Rectangle{};
     static b2Fixture* currentFixture = nullptr;
 
-    if (ImGui::Begin("Entity Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (ImGui::Begin("World Manager", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
     {
+        ImGui::Text("Draw shape");
         if (ImGui::RadioButton("Circle", &shapeIndex, 0))
         {
             shapeType = Circle{};
         }
+        ImGui::SameLine();
         if (ImGui::RadioButton("Rectangle", &shapeIndex, 1))
         {
             shapeType = Rectangle{};
         }
+        ImGui::Separator();
         ImGui::End();
     }
 

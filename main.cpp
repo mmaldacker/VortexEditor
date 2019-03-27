@@ -203,8 +203,8 @@ int main(int argc, char** argv)
                 ImGui::End();
             }
 
-            world.Render();
             shapeRenderer.Render(window);
+            world.Render();
 
             ImGui::Render();
 
