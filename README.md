@@ -8,6 +8,23 @@ See https://github.com/mmaldacker/Vortex2D
   <img src="https://github.com/mmaldacker/VortexEditor/raw/master/VortexEditor.png"/> 
 </p>
 
+# Building
+
+The usual cmake command (dependencies are downloaded by cmake):
+
+```
+mkdir build && cd build
+cmake ..
+make -j 4
+```
+
+Platforms supported:
+
+* Linux
+* Window
+
+See Vortex2D for more details on how to build.
+
 # Manual
 
 ## Drawing shape
