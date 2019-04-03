@@ -6,6 +6,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include <GLFW/glfw3.h>
+
 namespace
 {
 b2BodyType GetBox2DType(int type)
@@ -56,14 +58,12 @@ World::World(const Vortex2D::Renderer::Device& device,
     , mGravity(device, size)
     , mLiquidPhi(mWorld.LiquidDistanceField())
     , mForce(device, radius)
-    , mFluid(device, radius)
 {
   mWorld.AttachRigidBodySolver(mBox2DSolver);
   mGravity.Colour = {0.0f, ImGui::GetIO().DeltaTime * gravityForce, 0.0f, 0.0f};
   mLiquidPhi.Colour = glm::vec4(36.0f, 123.0f, 160.0f, 255.0f) / glm::vec4(255.0f);
   mForce.Colour = glm::vec4(0.0f);
   mVelocityRender = mWorld.RecordVelocity({mGravity, mForce}, Vortex2D::Fluid::VelocityOp::Add);
-  mFluidRender = mWorld.RecordParticleCount({mFluid});
 }
 
 b2World& World::GetBox2dWorld()
@@ -163,17 +163,30 @@ void World::Render()
   if (!io.WantCaptureMouse && io.MouseDown[1])
   {
     glm::vec2 pos = {io.MouseClickedPos[1].x / mScale, io.MouseClickedPos[1].y / mScale};
-    glm::vec2 currPos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
-    glm::vec2 delta = currPos - pos;
 
-    mFluid.Position = pos;
-    mFluid.Anchor = anchor;
-    mFluid.Colour = glm::vec4(4);
-    mFluidRender.Submit();
+    if (io.KeysDown[GLFW_KEY_LEFT_CONTROL])
+    {
+      auto size = glm::abs(glm::vec2{(io.MouseClickedPos[1].x - io.MousePos.x) / mScale,
+                                     (io.MouseClickedPos[1].y - io.MousePos.y) / mScale});
 
-    mForce.Position = pos;
-    mForce.Anchor = anchor;
-    mForce.Colour = glm::vec4(delta, 0.0f, 0.0f);
+      mFluid = std::make_shared<Vortex2D::Renderer::IntRectangle>(mDevice, size);
+    }
+    else
+    {
+      mFluid = std::make_shared<Vortex2D::Renderer::IntRectangle>(mDevice, radius);
+      mFluid->Anchor = anchor;
+
+      glm::vec2 currPos = {io.MousePos.x / mScale, io.MousePos.y / mScale};
+      glm::vec2 delta = currPos - pos;
+
+      mForce.Position = pos;
+      mForce.Anchor = anchor;
+      mForce.Colour = glm::vec4(delta, 0.0f, 0.0f);
+    }
+
+    mFluid->Colour = glm::vec4(4);
+    mFluid->Position = pos;
+    mWorld.RecordParticleCount({*mFluid}).Submit();
   }
 
   if (!io.WantCaptureMouse && io.MouseReleased[1])
@@ -186,6 +199,10 @@ void World::Render()
     mWorld.SubmitVelocity(mVelocityRender);
     auto params = Vortex2D::Fluid::FixedParams(12);
     mWorld.Step(params);
+  }
+  else
+  {
+    mWorld.ParticlePhi();
   }
 
   for (int i = 0; i < mEntities.size(); i++)

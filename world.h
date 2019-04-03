@@ -30,6 +30,6 @@ private:
   Vortex2D::Renderer::Rectangle mGravity;
   Vortex2D::Fluid::DistanceField mLiquidPhi;
   Vortex2D::Renderer::Rectangle mForce;
-  Vortex2D::Renderer::IntRectangle mFluid;
-  Vortex2D::Renderer::RenderCommand mVelocityRender, mWindowRender, mFluidRender;
+  std::shared_ptr<Vortex2D::Renderer::IntRectangle> mFluid;
+  Vortex2D::Renderer::RenderCommand mVelocityRender, mWindowRender;
 };

@@ -33,12 +33,13 @@ Select rectangle or circle from shape drawing.
 
 * Left click and drag to create rectangle/circle.
 * Once created, left click and drag, to move around.
-* Ctrl + left click to rotate
+* Ctrl + left click to rotate.
 
 ## Adding water
 
-* Right click to add water
-* Right click and draw to add force
+* Right click to add water.
+* Right click and drag to add force.
+* Ctrl + right click and drag to add more water.
 
 ## Objects
 
