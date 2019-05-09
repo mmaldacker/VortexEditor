@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.11)
 
 project(VortexEditor)
 set(CMAKE_CXX_STANDARD 14)
 
 # cmake file to download and include dependencies
-include(cmake/DownloadProject.cmake)
+include(FetchContent)
 
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -13,25 +13,31 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 if (APPLE)
     set(GLFW_VULKAN_STATIC ON  CACHE BOOL "" FORCE)
 endif()
-download_project(PROJ                glfw3
-                 GIT_REPOSITORY      https://github.com/glfw/glfw.git
-                 GIT_TAG             master
-                 ${UPDATE_DISCONNECTED_IF_AVAILABLE})
-add_subdirectory(${glfw3_SOURCE_DIR} ${glfw3_BINARY_DIR})
+FetchContent_Declare(glfw3
+                     GIT_REPOSITORY      https://github.com/glfw/glfw.git
+                     GIT_TAG             master)
+if(NOT glfw3_POPULATED)
+  FetchContent_Populate(glfw3)
+  add_subdirectory(${glfw3_SOURCE_DIR} ${glfw3_BINARY_DIR})
+endif()
 
-download_project(PROJ                Box2D
-                 GIT_REPOSITORY      https://github.com/erincatto/Box2D.git
-                 GIT_TAG             v2.3.1
-                 ${UPDATE_DISCONNECTED_IF_AVAILABLE})
+FetchContent_Declare(box2d
+                     GIT_REPOSITORY      https://github.com/erincatto/Box2D.git
+                     GIT_TAG             v2.3.1)
 
 set(BOX2D_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-add_subdirectory(${Box2D_SOURCE_DIR}/Box2D ${Box2D_BINARY_DIR})
+if(NOT box2d_POPULATED)
+  FetchContent_Populate(box2d)
+  add_subdirectory(${box2d_SOURCE_DIR}/Box2D ${box2d_BINARY_DIR})
+endif()
 
-download_project(PROJ                Vortex2D
-                 GIT_REPOSITORY      https://github.com/mmaldacker/Vortex2D.git
-                 GIT_TAG             master
-                 ${UPDATE_DISCONNECTED_IF_AVAILABLE})
-add_subdirectory(${Vortex2D_SOURCE_DIR} ${Vortex2D_BINARY_DIR})
+FetchContent_Declare(vortex2d
+                     GIT_REPOSITORY      https://github.com/mmaldacker/Vortex2D.git
+                     GIT_TAG             master)
+if(NOT vortex2d_POPULATED)
+  FetchContent_Populate(vortex2d)
+  add_subdirectory(${vortex2d_SOURCE_DIR} ${vortex2d_BINARY_DIR})
+endif()
 
 file(GLOB IMGUI_SRC
     "imgui/imgui.h"
@@ -74,7 +80,7 @@ target_include_directories(VortexEditor PRIVATE
     $<TARGET_PROPERTY:glfw,INTERFACE_INCLUDE_DIRECTORIES>
     ${CMAKE_CURRENT_BINARY_DIR}
     "imgui"
-    ${Box2D_SOURCE_DIR}/Box2D)
+    ${box2d_SOURCE_DIR}/Box2D)
 
 if (WIN32)
     vortex2d_copy_dll(VortexEditor)
