@@ -145,7 +145,7 @@ int main(int argc, char** argv)
     Vortex2D::Renderer::Instance instance("VulkanEditor", GetGLFWExtensions(), validation);
     vk::SurfaceKHR surface(
         GetGLFWSurface(glfwWindow, static_cast<VkInstance>(instance.GetInstance())));
-    Vortex2D::Renderer::Device device(instance.GetPhysicalDevice(), surface, validation);
+    Vortex2D::Renderer::Device device(instance, surface, validation);
     Vortex2D::Renderer::RenderWindow window(
         device, surface, windowSize.x * scale.x, windowSize.y * scale.y);
 
