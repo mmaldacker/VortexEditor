@@ -73,7 +73,7 @@ add_executable(VortexEditor
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.h
 )
 
-target_link_libraries(VortexEditor glfw vortex2d Box2D)
+target_link_libraries(VortexEditor glfw vortex2d Box2D glm)
 
 # Ensure glfw is included first
 target_include_directories(VortexEditor PRIVATE

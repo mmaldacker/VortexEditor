@@ -51,7 +51,7 @@ World::World(const Vortex2D::Renderer::Device& device,
     : mDevice(device)
     , mSize(size)
     , mScale(scale)
-    , mWorld(device, size, ImGui::GetIO().DeltaTime, 2)
+    , mWorld(device, size, ImGui::GetIO().DeltaTime, 2, Vortex2D::Fluid::Velocity::InterpolationMode::Linear)
     , mBox2DWorld(b2Vec2(0.0f, gravityForce))
     , mBox2DSolver(mBox2DWorld)
     , mEntities(entities)
