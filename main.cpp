@@ -1,9 +1,11 @@
 #include <Vortex2D/Vortex2D.h>
+
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <chrono>
+
 #include "imguirenderer.h"
-#include "shaperenderer.h"
+#include "ui.h"
 #include "world.h"
 
 std::vector<const char*> GetGLFWExtensions()
@@ -167,10 +169,8 @@ int main(int argc, char** argv)
     ImGuiRenderer renderer(device);
     Vortex2D::Renderer::RenderCommand imguiCmd;
 
-    std::vector<EntityPtr> entities;
-    World world(device, fluidSize, fluidScale, entities);
-    ShapeRenderer shapeRenderer(
-        device, fluidSize, fluidScale, entities, world.GetBox2dWorld(), world.GetWorld());
+    World world(device, fluidSize, fluidScale);
+    UI ui(device, world, fluidSize, fluidScale);
 
     Vortex2D::Renderer::ColorBlendState blendState;
     blendState.ColorBlend.setBlendEnable(true)
@@ -205,8 +205,8 @@ int main(int argc, char** argv)
         ImGui::End();
       }
 
-      shapeRenderer.Render(window);
-      world.Render();
+      ui.Update(window);
+      world.Render(window);
 
       ImGui::Render();
 

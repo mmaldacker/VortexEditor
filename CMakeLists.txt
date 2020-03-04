@@ -60,14 +60,14 @@ add_executable(VortexEditor
     imgui.vert
     imguirenderer.h
     imguirenderer.cpp
-    shaperenderer.h
-    shaperenderer.cpp
     world.h
     world.cpp
     rigidbody.h
     rigidbody.cpp
     entity.h
     entity.cpp
+    ui.h
+    ui.cpp
     ${IMGUI_SRC}
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/vortexeditor_spirv.h

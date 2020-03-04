@@ -25,7 +25,6 @@ bool IsValid(const ShapeType& type);
 struct Entity
 {
   float mScale;
-  std::string mId;
   ShapeType mShapeType;
   std::unique_ptr<Vortex2D::Renderer::Shape> mShape;
   Vortex2D::Renderer::RenderCommand mCmd;
@@ -34,7 +33,6 @@ struct Entity
   Entity(const Vortex2D::Renderer::Device& device,
          const glm::ivec2& size,
          float scale,
-         const std::string& id,
          ShapeType type,
          std::unique_ptr<Vortex2D::Renderer::Shape> shape,
          Vortex2D::Renderer::RenderCommand cmd,

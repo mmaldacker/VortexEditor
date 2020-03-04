@@ -3,12 +3,11 @@
 Entity::Entity(const Vortex2D::Renderer::Device& device,
                const glm::ivec2& size,
                float scale,
-               const std::string& id,
                ShapeType type,
                std::unique_ptr<Vortex2D::Renderer::Shape> shape,
                Vortex2D::Renderer::RenderCommand cmd,
                b2World& box2dWorld)
-    : mScale(scale), mId(id), mShapeType(type), mShape(std::move(shape)), mCmd(std::move(cmd))
+    : mScale(scale), mShapeType(type), mShape(std::move(shape)), mCmd(std::move(cmd))
 {
   mShapeType.match(
       [&](const Circle& circle) {
