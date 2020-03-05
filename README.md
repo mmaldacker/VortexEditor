@@ -6,8 +6,11 @@ See https://github.com/mmaldacker/Vortex2D
 
 <p align="middle">
   <img src="https://github.com/mmaldacker/VortexEditor/raw/master/VortexEditor.png"/> 
-  <img src="https://img.youtube.com/vi/4xzALHymYmw/0.jpg">https://www.youtube.com/watch?v=4xzALHymYmw</img>
 </p>
+
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=4xzALHymYmw"><img src="https://img.youtube.com/vi/4xzALHymYmw/0.jpg"></a>
+</div>
 
 # Building
 
