@@ -19,6 +19,8 @@ private:
 
   World& mWorld;
 
+  Entity* mCurrentEntity;
+
   ShapeType mShapeType;
   std::unique_ptr<Vortex2D::Renderer::Shape> mBuildShape;
   Vortex2D::Renderer::RenderCommand mBuildCmd;

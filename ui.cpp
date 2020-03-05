@@ -51,6 +51,7 @@ UI::UI(const Vortex2D::Renderer::Device& device, World& world, const glm::ivec2&
     , mSize(size)
     , mScale(scale)
     , mWorld(world)
+    , mCurrentEntity(nullptr)
     , mShapeType(Rectangle{})
     , mForce(device, radius)
 {
@@ -62,11 +63,11 @@ void UI::RenderFluid()
 {
   auto& io = ImGui::GetIO();
 
-  glm::vec2 pos = {io.MouseClickedPos[1].x / mScale, io.MouseClickedPos[1].y / mScale};
+  glm::vec2 pos = {io.MouseClickedPos[0].x / mScale, io.MouseClickedPos[0].y / mScale};
   if (io.KeysDown[GLFW_KEY_LEFT_CONTROL])
   {
-    auto size = glm::abs(glm::vec2{(io.MouseClickedPos[1].x - io.MousePos.x) / mScale,
-                                   (io.MouseClickedPos[1].y - io.MousePos.y) / mScale});
+    auto size = glm::abs(glm::vec2{(io.MouseClickedPos[0].x - io.MousePos.x) / mScale,
+                                   (io.MouseClickedPos[0].y - io.MousePos.y) / mScale});
 
     mFluid = std::make_shared<Vortex2D::Renderer::IntRectangle>(mDevice, size);
   }
@@ -173,42 +174,45 @@ void UI::Update(Vortex2D::Renderer::RenderTarget& target)
 
   auto& io = ImGui::GetIO();
 
-  Entity* entity = mWorld.FindEntity({io.MousePos.x, io.MousePos.y});
-
   if (ImGui::BeginPopupContextVoid("World Manager"))
   {
-    if (entity == nullptr &&
-        ImGui::Selectable("Rectangle", !renderFluid && mShapeType.is<Rectangle>()))
+    if (mCurrentEntity == nullptr)
     {
-      mShapeType = Rectangle{};
-      renderFluid = false;
+      if (ImGui::Selectable("Rectangle", !renderFluid && mShapeType.is<Rectangle>()))
+      {
+        mShapeType = Rectangle{};
+        renderFluid = false;
+      }
+      if (ImGui::Selectable("Circle", !renderFluid && mShapeType.is<Circle>()))
+      {
+        mShapeType = Circle{};
+        renderFluid = false;
+      }
+      if (ImGui::Selectable("Fluid", renderFluid))
+      {
+        renderFluid = true;
+      }
     }
-    if (entity == nullptr && ImGui::Selectable("Circle", !renderFluid && mShapeType.is<Circle>()))
+    else
     {
-      mShapeType = Circle{};
-      renderFluid = false;
-    }
-    if (entity == nullptr && ImGui::Selectable("Fluid", renderFluid))
-    {
-      renderFluid = true;
-    }
-
-    if (entity != nullptr && ImGui::Selectable("Static"))
-    {
-      entity->mRigidbody->mBody->SetType(GetBox2DType(0));
-      entity->mRigidbody->mRigidbody->SetType(GetVortex2DType(0));
-    }
-
-    if (entity != nullptr && ImGui::Selectable("Dynamic"))
-    {
-      entity->mRigidbody->mBody->SetType(GetBox2DType(1));
-      entity->mRigidbody->mRigidbody->SetType(GetVortex2DType(1));
-      entity->mShape->Colour = red;
-    }
-
-    if (entity != nullptr && ImGui::Selectable("Delete"))
-    {
-      mWorld.Delete(entity);
+      if (ImGui::Selectable("Static"))
+      {
+        mCurrentEntity->mRigidbody->mBody->SetType(GetBox2DType(0));
+        mCurrentEntity->mRigidbody->mRigidbody->SetType(GetVortex2DType(0));
+        mCurrentEntity = nullptr;
+      }
+      if (ImGui::Selectable("Dynamic"))
+      {
+        mCurrentEntity->mRigidbody->mBody->SetType(GetBox2DType(1));
+        mCurrentEntity->mRigidbody->mRigidbody->SetType(GetVortex2DType(1));
+        mCurrentEntity->mShape->Colour = red;
+        mCurrentEntity = nullptr;
+      }
+      if (ImGui::Selectable("Delete"))
+      {
+        mWorld.Delete(mCurrentEntity);
+        mCurrentEntity = nullptr;
+      }
     }
 
     if (ImGui::Selectable("Clear"))
@@ -224,15 +228,20 @@ void UI::Update(Vortex2D::Renderer::RenderTarget& target)
     return;
   }
 
+  if (io.MouseClicked[0] || io.MouseClicked[1])
+  {
+    mCurrentEntity = mWorld.FindEntity({io.MousePos.x, io.MousePos.y});
+  }
+
   if (io.MouseDown[0])
   {
     if (renderFluid)
     {
       RenderFluid();
     }
-    else if (entity != nullptr)
+    else if (mCurrentEntity != nullptr)
     {
-      MoveShape(*entity);
+      MoveShape(*mCurrentEntity);
     }
     else
     {
@@ -240,9 +249,14 @@ void UI::Update(Vortex2D::Renderer::RenderTarget& target)
     }
   }
 
-  if (io.MouseReleased[0] && entity == nullptr)
+  if (io.MouseReleased[0])
   {
-    CreateShape();
+    if (mCurrentEntity == nullptr)
+    {
+      CreateShape();
+    }
+
+    mCurrentEntity = nullptr;
   }
 
   mBuildCmd.Submit();
