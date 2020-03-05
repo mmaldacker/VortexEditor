@@ -29,7 +29,7 @@ See Vortex2D for more details on how to build.
 
 ## Drawing shape
 
-Select rectangle or circle from shape drawing.
+Right click to open the contextual window and select shape (rectangle or circle).
 
 * Left click and drag to create rectangle/circle.
 * Once created, left click and drag, to move around.
@@ -37,12 +37,16 @@ Select rectangle or circle from shape drawing.
 
 ## Adding water
 
-* Right click to add water.
-* Right click and drag to add force.
-* Ctrl + right click and drag to add more water.
+Right click to open the contextual window and select fluid.
+
+* Left click to add water.
+* Left click and drag to add force.
+* Ctrl + left click and drag to add more water.
 
 ## Objects
 
-* Select shape from drop down menu, choose static/dynamic type and click update.
-* Select shape from drop down menu, delete to remove.
+Right click on a shape to open the contextual window:
+
+* Static/Dynamic object.
+* Delete object.
 * Clean to remove all objects.
