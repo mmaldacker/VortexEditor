@@ -70,6 +70,7 @@ void UI::RenderFluid()
                                    (io.MouseClickedPos[0].y - io.MousePos.y) / mScale});
 
     mFluid = std::make_shared<Vortex2D::Renderer::IntRectangle>(mDevice, size);
+    mForce.Colour = glm::vec4(0.0f);
   }
   else
   {
